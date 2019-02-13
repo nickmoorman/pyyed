@@ -414,10 +414,20 @@ class Graph(object):
         self.nodes[node_name] = Node(node_name, **kwargs)
         return self.nodes[node_name]
 
+    def _node_name(self, node_or_str):
+        if isinstance(node_or_str, Node):
+            return node_or_str.node_name
+        elif isinstance(node_or_str, str):
+            return node_or_str
+        else:
+            raise RuntimeWarning("Node must be a Node object or a string")
+
     def add_edge(self, node1, node2, label="", arrowhead="standard", arrowfoot="none",
                  color="#000000", line_type="line",
                  width="1.0"):
         # pass node names, not actual node objects
+        node1 = self._node_name(node1)
+        node2 = self._node_name(node2)
 
         existing_entities = self.nodes_in_folders
         existing_entities.extend(self.nodes_in_groups)
