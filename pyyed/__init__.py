@@ -16,7 +16,7 @@ arrow_types = ["none", "standard", "white_delta", "diamond", "white_diamond", "s
                "crows_foot_many", "crows_foot_optional"]
 
 
-class Group:
+class Group(object):
     def __init__(self, group_id, parent_graph, label=None, shape="rectangle",
                  closed="false", font_family="Dialog", underlined_text="false",
                  font_style="plain", font_size="12", fill="#FFCC00", transparent="false",
@@ -116,7 +116,7 @@ class Group:
         # ProxyAutoBoundsNode crap just draws bar at top of group
 
 
-class Node:
+class Node(object):
     def __init__(self, node_name, label=None, shape="rectangle", font_family="Dialog",
                  underlined_text="false", font_style="plain", font_size="12",
                  shape_fill="#FF0000", transparent="false", edge_color="#000000",
@@ -211,7 +211,7 @@ class Node:
         return node
 
 
-class Edge:
+class Edge(object):
     def __init__(self, node1, node2, label="", arrowhead="standard", arrowfoot="none",
                  color="#000000", line_type="line", width="1.0"):
         self.node1 = node1
@@ -253,7 +253,7 @@ class Edge:
         return edge
 
 
-class Graph:
+class Graph(object):
     def __init__(self, directed="directed", graph_id="G"):
 
         self.nodes_in_groups = []
