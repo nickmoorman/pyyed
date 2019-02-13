@@ -75,6 +75,7 @@ class Group:
 
         self.nodes[node_name] = Node(node_name, **kwargs)
         self.parent_graph.nodes_in_groups.append(node_name)
+        return self.nodes[node_name]
 
     def convert(self):
         node = ET.Element("node", id=self.group_id)
@@ -323,6 +324,7 @@ class Graph:
             raise RuntimeWarning("Node %s already exists" % node_name)
 
         self.nodes[node_name] = Node(node_name, **kwargs)
+        return self.nodes[node_name]
 
     def add_edge(self, node1, node2, label="", arrowhead="standard", arrowfoot="none",
                  color="#000000", line_type="line",
