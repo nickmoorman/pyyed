@@ -116,6 +116,84 @@ class Group(object):
         # ProxyAutoBoundsNode crap just draws bar at top of group
 
 
+class Folder(Group):
+    def __init__(self, folder_id, parent_graph, label=None, shape="roundrectangle",
+                 closed="false", font_family="Dialog", underlined_text="false",
+                 font_style="plain", font_size="12", fill="#F5F5F5", transparent="false",
+                 edge_color="#000000", edge_type="line", edge_width="1.0", height=False,
+                 width=False, x=False, y=False):
+        super(Folder, self).__init__(folder_id, parent_graph,
+                                     label=label, shape=shape, closed=closed,
+                                     font_family=font_family, underlined_text=underlined_text,
+                                     font_style=font_style, font_size=font_size, fill=fill, transparent=transparent,
+                                     edge_color=edge_color, edge_type=edge_type, edge_width=edge_width, height=height,
+                                     width=width, x=x, y=y)
+
+        self.folder_id = folder_id
+        self.groups = {}
+        del(self.group_id)
+
+    def add_group(self, group_id, **kwargs):
+        group = self.parent_graph.add_group(group_id, **kwargs)
+        self.groups[group_id] = group
+        return group
+
+    def add_node(self, node_name, **kwargs):
+        if node_name in self.nodes.keys():
+            raise RuntimeWarning("Node %s already exists" % node_name)
+
+        self.nodes[node_name] = Node(node_name, **kwargs)
+        self.parent_graph.nodes_in_folders.append(node_name)
+        return self.nodes[node_name]
+
+    def convert(self):
+        node = ET.Element("node", id=self.folder_id)
+        #node.set("yfiles.foldertype", "folder")
+        node.set("yfiles.foldertype", "group")
+        data = ET.SubElement(node, "data", key="data_node")
+
+        # node for folder
+        pabn = ET.SubElement(data, "y:ProxyAutoBoundsNode")
+        r = ET.SubElement(pabn, "y:Realizers", active="0")
+        group_node = ET.SubElement(r, "y:GroupNode")
+
+        if self.geom:
+            ET.SubElement(group_node, "y:Geometry", **self.geom)
+
+        ET.SubElement(group_node, "y:Fill", color=self.fill, transparent=self.transparent)
+
+        ET.SubElement(group_node, "y:BorderStyle", color=self.edge_color,
+                      type=self.edge_type, width=self.edge_width)
+
+        label = ET.SubElement(group_node, "y:NodeLabel", modelName="internal",
+                              modelPosition="t",
+                              fontFamily=self.font_family, fontSize=self.font_size,
+                              underlinedText=self.underlined_text,
+                              fontStyle=self.font_style)
+        label.text = self.label
+
+        ET.SubElement(group_node, "y:Shape", type=self.shape)
+
+        ET.SubElement(group_node, "y:State", closed=self.closed)
+
+        graph = ET.SubElement(node, "graph", edgedefault="directed", id=self.folder_id)
+
+        for group_id in self.groups:
+            group = self.groups[group_id]
+            n = group.convert()
+            graph.append(n)
+            for node_id in group.nodes:
+                n = group.nodes[node_id].convert()
+                graph.append(n)
+
+        for node_id in self.nodes:
+            n = self.nodes[node_id].convert()
+            graph.append(n)
+
+        return node
+        # ProxyAutoBoundsNode crap just draws bar at top of folder
+
+
 class Node(object):
     def __init__(self, node_name, label=None, shape="rectangle", font_family="Dialog",
                  underlined_text="false", font_style="plain", font_size="12",
@@ -256,6 +334,7 @@ class Edge(object):
 class Graph(object):
     def __init__(self, directed="directed", graph_id="G"):
 
+        self.nodes_in_folders = []
         self.nodes_in_groups = []
         self.nodes = {}
         self.edges = {}
@@ -263,6 +342,7 @@ class Graph(object):
         self.directed = directed
         self.graph_id = graph_id
 
+        self.folders = {}
         self.groups = {}
 
         self.graphml = ""
@@ -295,6 +375,14 @@ class Graph(object):
         for node_id in self.nodes:
             node = self.nodes[node_id].convert()
             graph.append(node)
+
+        for folder_id in self.folders:
+            folder = self.folders[folder_id]
+            node = folder.convert()
+            graph.append(node)
+            for group_id in folder.groups:
+                node = folder.groups[group_id].convert()
+                graph.append(node)
 
         for group_id in self.groups:
             node = self.groups[group_id].convert()
@@ -331,7 +419,8 @@ class Graph(object):
                  width="1.0"):
         # pass node names, not actual node objects
 
-        existing_entities = self.nodes_in_groups
+        existing_entities = self.nodes_in_folders
+        existing_entities.extend(self.nodes_in_groups)
         existing_entities.extend(self.nodes.keys())
         existing_entities.extend(self.groups.keys())
 
@@ -343,6 +432,10 @@ class Graph(object):
 
         edge = Edge(node1, node2, label, arrowhead, arrowfoot, color, line_type, width)
         self.edges[edge.edge_id] = edge
+
+    def add_folder(self, folder_id, **kwargs):
+        self.folders[folder_id] = Folder(folder_id, self, **kwargs)
+        return self.folders[folder_id]
 
     def add_group(self, group_id, **kwargs):
         self.groups[group_id] = Group(group_id, self, **kwargs)
